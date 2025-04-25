@@ -14,8 +14,7 @@ class RequestTorneo extends Model
     protected $fillable = [
         'id_participant',
         'id_club',
-        'centro_estudios',
-        'ubigeo_centro_estudios',
-        'year_estudios',
+        'id_centro_estudios',
+        'id_category',
     ];
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CentroEstudiosController;
 use App\Http\Controllers\ClubController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\RequestTorneoController;
@@ -21,6 +23,20 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['middleware' => ['cors']], function () {
+
+    Route::controller(CategoryController::class)->group(function () {
+        Route::post('/add-category', 'add');
+        Route::get('/get-category', 'search');
+        Route::put('/update-category/{id}', 'update');
+        Route::delete('/delete-category/{id}', 'delete');
+    });
+
+    Route::controller(CentroEstudiosController::class)->group(function () {
+        Route::post('/add-centro-estudios', 'add');
+        Route::get('/get-centro-estudios', 'search');
+        Route::put('/update-centro-estudios/{id}', 'update');
+        Route::delete('/delete-centro-estudios/{id}', 'delete');
+    });
 
     Route::controller(ParticipantController::class)->group(function () {
         Route::post('/add-participant', 'add');

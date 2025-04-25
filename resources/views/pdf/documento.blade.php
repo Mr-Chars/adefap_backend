@@ -85,7 +85,7 @@
         </tr>
         <tr>
             <td style="width: 50%; text-align: left;">
-                <span style="font-weight: bold;">AÑO DE ESTUDIOS:</span> {{ $year_estudios }}
+                <span style="font-weight: bold;">CATEGORÍA:</span> {{ $category_name }}
             </td>
             <td style="width: 50%; text-align: left;">
                 <span style="font-weight: bold;">DNI N°:</span> {{ $dni }}
@@ -111,7 +111,7 @@
         </tr>
     </table>
 
-    <table width="100%" border="0" style="margin-bottom: 30px;">
+    <!-- <table width="100%" border="0" style="margin-bottom: 30px;">
         <tr>
             <td style="width: 50%; text-align: left;">
                 ________________________ <br>
@@ -137,7 +137,7 @@
     <div style="margin-top: 70px;width: 100%;text-align: center;">
         FIRMA DEL APODERADO <br>
         ________________________
-    </div>
+    </div> -->
 </body>
 
 </html>

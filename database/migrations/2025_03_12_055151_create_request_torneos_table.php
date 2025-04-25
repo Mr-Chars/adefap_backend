@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('id_participant');
             $table->string('id_club');
-            $table->string('centro_estudios');
-            $table->string('ubigeo_centro_estudios');
-            $table->string('year_estudios');
+            $table->string('id_centro_estudios')->nullable();
+            $table->string('id_category');
             $table->timestamps();
         });
     }

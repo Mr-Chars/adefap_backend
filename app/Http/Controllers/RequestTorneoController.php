@@ -26,16 +26,21 @@ class RequestTorneoController extends Controller
         $pagination_step = ($config && array_key_exists('pagination_step', $config)) ? $config['pagination_step'] : 0;
 
         $search = DB::table('request_torneo')
-            ->join('tb_ubigeos as ubigeo_centro_estudios', 'request_torneo.ubigeo_centro_estudios', '=', 'ubigeo_centro_estudios.ubigeo_reniec')
-            ->join('participant', 'request_torneo.id_participant', '=', 'participant.id');
+            ->leftJoin('centro_estudios', 'request_torneo.id_centro_estudios', '=', 'centro_estudios.id')
+            ->leftJoin('tb_ubigeos as ubigeo_centro_estudios', 'centro_estudios.ubigeo', '=', 'ubigeo_centro_estudios.ubigeo_reniec')
+            ->join('participant', 'request_torneo.id_participant', '=', 'participant.id')
+            ->join('tb_ubigeos as ubigeo_nacimiento', 'participant.ubigeo_nacimiento', '=', 'ubigeo_nacimiento.ubigeo_reniec')
+            ->join('tb_ubigeos as ubigeo_domicilio', 'participant.ubigeo_domicilio', '=', 'ubigeo_domicilio.ubigeo_reniec')
+            ->join('category', 'request_torneo.id_category', '=', 'category.id');
 
         if ($where) {
             $search = $search->where($where);
         }
         $search->select(
             'request_torneo.id as id',
-            'request_torneo.centro_estudios as centro_estudios',
-            'request_torneo.year_estudios as year_estudios',
+            // 'request_torneo.centro_estudios as centro_estudios',
+            'request_torneo.id_category as id_category',
+            'request_torneo.id_club as id_club',
 
             'participant.id as participant_id',
             'participant.nombres as participant_nombres',
@@ -51,7 +56,13 @@ class RequestTorneoController extends Controller
             'participant.peso as participant_peso',
             'participant.participantPhoto as participant_participantPhoto',
 
+            'centro_estudios.nombre as centro_estudios_nombre',
+
+            'ubigeo_nacimiento.distrito as ubigeo_nacimiento_distrito',
             'ubigeo_centro_estudios.distrito as ubigeo_centro_estudios_distrito',
+            'ubigeo_domicilio.distrito as ubigeo_domicilio_distrito',
+
+            'category.name as category_name',
         );
         if ($pagination_itemQuantity) {
             $search = $search->paginate($pagination_itemQuantity, null, 'page', $pagination_step);
@@ -88,9 +99,7 @@ class RequestTorneoController extends Controller
         $validated = Validator::make($request->all(), [
             'id_participant' => 'required',
             'id_club' => 'required',
-            'centro_estudios' => 'required',
-            'ubigeo_centro_estudios' => 'required',
-            'year_estudios' => 'required',
+            'id_category' => 'required',
         ]);
 
         $token = $request->header('token');
@@ -114,9 +123,8 @@ class RequestTorneoController extends Controller
 
         $id_participant = $request->id_participant;
         $id_club = $request->id_club;
-        $centro_estudios = $request->centro_estudios;
-        $ubigeo_centro_estudios = $request->ubigeo_centro_estudios;
-        $year_estudios = $request->year_estudios;
+        $id_centro_estudios = $request->id_centro_estudios;
+        $id_category = $request->id_category;
 
         $arrayConfig = [
             'where' => [['request_torneo.id_participant', '=', $id_participant], ['request_torneo.id_club', '=', $id_club]],
@@ -132,9 +140,8 @@ class RequestTorneoController extends Controller
         $dataToUpdate = [
             'id_participant' => $id_participant,
             'id_club' => $id_club,
-            'centro_estudios' => $centro_estudios,
-            'ubigeo_centro_estudios' => $ubigeo_centro_estudios,
-            'year_estudios' => $year_estudios,
+            'id_centro_estudios' => $id_centro_estudios,
+            'id_category' => $id_category,
         ];
 
         try {
@@ -165,41 +172,41 @@ class RequestTorneoController extends Controller
         $arrayConfig = [
             'where' => [['request_torneo.id', '=', $request->idRequest]],
         ];
-        $userFromData = $this->getRequestTorneo($arrayConfig, true);
-        if (count($userFromData) <= 0) {
+        $requestTorneoFromData = $this->getRequestTorneo($arrayConfig, true);
+        if (count($requestTorneoFromData) <= 0) {
             return response()->json([
                 'status' => false,
                 'error' => 'requerimiento no encontrado',
             ]);
         }
+        $arrayConfig = [
+            'where' => [['clubs.id', '=', $requestTorneoFromData[0]->id_club]],
+        ];
 
-        // $arrayConfig = [
-        //     'where' => [['clubs.id', '=', $userFromData[0]->id_club]],
-        // ];
-
-        // $clubSelected = $this->clubController->getClubs($arrayConfig);
-
-        // $data = [
-        //     'clubSelected' => $clubSelected[0]->name,
-        //     'nombres' => $userFromData[0]->nombres,
-        //     'apellido_paterno' => $userFromData[0]->apellido_paterno,
-        //     'apellido_materno' => $userFromData[0]->apellido_materno,
-        //     'fecha_nacimiento' => $userFromData[0]->fecha_nacimiento,
-        //     'lugar_nacimiento' => $userFromData[0]->lugar_nacimiento,
-        //     'centro_estudios' => $userFromData[0]->centro_estudios,
-        //     'distrito_centro_estudios' => $userFromData[0]->ubigeo_centro_estudios_distrito,
-        //     'year_estudios' => $userFromData[0]->year_estudios,
-        //     'dni' => $userFromData[0]->dni,
-        //     'domicilio' => $userFromData[0]->domicilio,
-        //     'distrito_domicilio' => $userFromData[0]->ubigeo_domicilio_distrito,
-        //     'n_celular' => $userFromData[0]->n_celular,
-        //     'talla' => $userFromData[0]->talla,
-        //     'peso' => $userFromData[0]->peso,
-        //     'participantPhoto' => $userFromData[0]->participantPhoto,
-        // ];
-
-        // $pdf = Pdf::loadView('pdf.documento', $data);
-        // // return $pdf->download('documento.pdf'); // Para descargarlo
-        // return $pdf->stream(); // Para verlo en el navegador
+        $clubSelected = $this->clubController->getClubs($arrayConfig);
+        // print_r($requestTorneoFromData[0]);
+        // return;
+        $data = [
+            'clubSelected' => $clubSelected[0]->name,
+            'nombres' => $requestTorneoFromData[0]->participant_nombres,
+            'apellido_paterno' => $requestTorneoFromData[0]->participant_apellido_paterno,
+            'apellido_materno' => $requestTorneoFromData[0]->participant_apellido_materno,
+            'fecha_nacimiento' => $requestTorneoFromData[0]->participant_fecha_nacimiento,
+            'lugar_nacimiento' => $requestTorneoFromData[0]->ubigeo_nacimiento_distrito,
+            'centro_estudios' => $requestTorneoFromData[0]->centro_estudios_nombre,
+            'distrito_centro_estudios' => $requestTorneoFromData[0]->ubigeo_centro_estudios_distrito,
+            'category_name' => $requestTorneoFromData[0]->category_name,
+            'dni' => $requestTorneoFromData[0]->participant_dni,
+            'domicilio' => $requestTorneoFromData[0]->participant_domicilio,
+            'distrito_domicilio' => $requestTorneoFromData[0]->ubigeo_domicilio_distrito,
+            'n_celular' => $requestTorneoFromData[0]->participant_n_celular,
+            'talla' => $requestTorneoFromData[0]->participant_talla,
+            'peso' => $requestTorneoFromData[0]->participant_peso,
+            'participantPhoto' => $requestTorneoFromData[0]->participant_participantPhoto,
+        ];
+        // print_r($data);
+        $pdf = Pdf::loadView('pdf.documento', $data);
+        // return $pdf->download('documento.pdf'); // Para descargarlo
+        return $pdf->stream(); // Para verlo en el navegador
     }
 }
