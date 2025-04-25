@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CentroEstudiosController;
 use App\Http\Controllers\ClubController;
 use App\Http\Controllers\ParticipantController;
+use App\Http\Controllers\RegionController;
 use App\Http\Controllers\RequestTorneoController;
 use App\Http\Controllers\UbigeosController;
 use App\Http\Controllers\UserController;
@@ -23,6 +24,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['middleware' => ['cors']], function () {
+
+    Route::controller(RegionController::class)->group(function () {
+        Route::post('/add-region', 'add');
+        Route::get('/get-region', 'search');
+        Route::put('/update-region/{id}', 'update');
+        Route::delete('/delete-region/{id}', 'delete');
+    });
 
     Route::controller(CategoryController::class)->group(function () {
         Route::post('/add-category', 'add');
