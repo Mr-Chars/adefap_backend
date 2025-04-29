@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Rap2hpoutre\FastExcel\FastExcel;
 
 class RequestTorneoController extends Controller
 {
@@ -26,6 +27,7 @@ class RequestTorneoController extends Controller
         $pagination_step = ($config && array_key_exists('pagination_step', $config)) ? $config['pagination_step'] : 0;
 
         $search = DB::table('request_torneo')
+            ->leftJoin('region', 'request_torneo.id_region', '=', 'region.id')
             ->leftJoin('centro_estudios', 'request_torneo.id_centro_estudios', '=', 'centro_estudios.id')
             ->leftJoin('tb_ubigeos as ubigeo_centro_estudios', 'centro_estudios.ubigeo', '=', 'ubigeo_centro_estudios.ubigeo_reniec')
             ->join('participant', 'request_torneo.id_participant', '=', 'participant.id')
@@ -41,6 +43,7 @@ class RequestTorneoController extends Controller
             // 'request_torneo.centro_estudios as centro_estudios',
             'request_torneo.id_category as id_category',
             'request_torneo.id_club as id_club',
+            'request_torneo.id_region as id_region',
 
             'participant.id as participant_id',
             'participant.nombres as participant_nombres',
@@ -63,6 +66,8 @@ class RequestTorneoController extends Controller
             'ubigeo_domicilio.distrito as ubigeo_domicilio_distrito',
 
             'category.name as category_name',
+
+            'region.name as region_name',
         );
         if ($pagination_itemQuantity) {
             $search = $search->paginate($pagination_itemQuantity, null, 'page', $pagination_step);
@@ -125,15 +130,19 @@ class RequestTorneoController extends Controller
         $id_club = $request->id_club;
         $id_centro_estudios = $request->id_centro_estudios;
         $id_category = $request->id_category;
+        $id_region = $request->id_region;
 
         $arrayConfig = [
-            'where' => [['request_torneo.id_participant', '=', $id_participant], ['request_torneo.id_club', '=', $id_club]],
+            'where' => [['request_torneo.id_participant', '=', $id_participant]],
         ];
+        // $arrayConfig = [
+        //     'where' => [['request_torneo.id_participant', '=', $id_participant], ['request_torneo.id_club', '=', $id_club]],
+        // ];
         $userFromData = $this->getRequestTorneo($arrayConfig, true);
         if (count($userFromData)) {
             return response()->json([
                 'status' => false,
-                'error' => 'Este participante ya fue registrado en el club seleccionado.',
+                'error' => 'Este participante ya fue registrado.',
             ]);
         }
 
@@ -142,6 +151,7 @@ class RequestTorneoController extends Controller
             'id_club' => $id_club,
             'id_centro_estudios' => $id_centro_estudios,
             'id_category' => $id_category,
+            'id_region' => $id_region,
         ];
 
         try {
@@ -158,6 +168,45 @@ class RequestTorneoController extends Controller
             'post' => $post,
             'dataToadd' => $dataToUpdate,
         ]);
+    }
+
+    public function generarExcel()
+    {
+
+        $data = DB::table('request_torneo')
+            ->join('participant', 'request_torneo.id_participant', '=', 'participant.id')
+            ->leftJoin('clubs', 'request_torneo.id_club', '=', 'clubs.id')
+            ->join('category', 'request_torneo.id_category', '=', 'category.id')
+            ->select(
+                'request_torneo.id as id',
+                'participant.nombres as participant_nombres',
+                'participant.apellido_paterno as participant_apellido_paterno',
+                'participant.apellido_materno as participant_apellido_materno',
+                'participant.dni as participant_dni',
+                'participant.fecha_nacimiento as participant_fecha_nacimiento',
+
+                'clubs.name as club_name',
+                'category.name as category_name',
+
+                'request_torneo.created_at as created_at',
+            ) // Selecciona las columnas necesarias
+            ->get(); // Esto ya devuelve una Collection
+
+        return (new FastExcel($data))->download('archivo.xlsx', function ($item) {
+            return [
+                'Club' => $item->club_name,
+                'Nombre' => $item->participant_nombres,
+                'Apellidos' => $item->participant_apellido_paterno . ' ' . $item->participant_apellido_materno,
+                'FN' => $item->participant_fecha_nacimiento,
+                'DNI' => $item->participant_dni,
+                'Categoría' => $item->category_name,
+                // Agrega más campos según necesites
+            ];
+        });
+
+        // $response = (new FastExcel($data))->download('archivo.xlsx');
+
+        // return $response;
     }
 
     public function generarPdf(Request $request)

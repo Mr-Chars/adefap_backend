@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('id_club');
             $table->string('id_centro_estudios')->nullable();
             $table->string('id_category');
+            $table->integer('id_region');
             $table->timestamps();
         });
     }

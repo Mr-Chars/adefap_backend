@@ -3,12 +3,19 @@
 namespace App\Http\Middleware;
 
 use Closure;
-
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 class Cors
 {
     public function handle($request, Closure $next)
     {
-        return $next($request)
+        $response = $next($request);
+        // No aplicar CORS a respuestas de archivos
+        if ($response instanceof BinaryFileResponse || $response instanceof StreamedResponse) {
+            return $response;
+        }
+
+        return $response
             //Url a la que se le dará acceso en las peticiones
             ->header('Access-Control-Allow-Origin', '*')
             //Métodos que a los que se da acceso

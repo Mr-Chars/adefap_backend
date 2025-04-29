@@ -81,6 +81,7 @@ class UserController extends Controller
         $username = $request->username;
         $password = $request->password;
         $role = $request->role;
+        $id_region = $request->id_region;
 
         $arrayConfig = [
             'where' => [['user.username', '=', $username]],
@@ -98,6 +99,7 @@ class UserController extends Controller
             'username' => $username,
             'password' => $password,
             'role' => $role,
+            'id_region' => $id_region,
         ];
 
         try {
@@ -193,7 +195,8 @@ class UserController extends Controller
         $pagination_itemQuantity = (array_key_exists('pagination_itemQuantity', $config)) ? $config['pagination_itemQuantity'] : 0;
         $pagination_step = (array_key_exists('pagination_step', $config)) ? $config['pagination_step'] : 0;
 
-        $search = DB::table('user');
+        $search = DB::table('user')
+            ->leftJoin('region', 'user.id_region', '=', 'region.id');
 
         if ($where) {
             $search = $search->where($where);
@@ -208,8 +211,11 @@ class UserController extends Controller
             'user.username as username',
             'user.password as password',
             'user.role as role',
+            'user.id_region as id_region',
             'user.created_at as created_at',
             'user.updated_at as updated_at',
+
+            'region.name as region_name',
         );
         if ($pagination_itemQuantity) {
             $search = $search->paginate($pagination_itemQuantity, null, 'page', $pagination_step);

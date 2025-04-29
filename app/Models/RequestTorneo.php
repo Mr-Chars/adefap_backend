@@ -16,5 +16,6 @@ class RequestTorneo extends Model
         'id_club',
         'id_centro_estudios',
         'id_category',
+        'id_region',
     ];
 }

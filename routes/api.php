@@ -80,5 +80,6 @@ Route::group(['middleware' => ['cors']], function () {
         Route::post('/add-request-torneo', 'add');
         Route::get('/get-request-torneo', 'search');
         Route::get('/generate-pdf', 'generarPdf');
+        Route::get('/generate-excel', 'generarExcel');
     });
 });
